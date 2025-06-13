@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-class MapView extends StatefulWidget {
-  const MapView({super.key});
+class SynchronizeView extends StatefulWidget {
+  const SynchronizeView({super.key});
 
   @override
-  State<MapView> createState() => _MapViewState();
+  State<SynchronizeView> createState() => _SynchronizeViewState();
 }
 
-class _MapViewState extends State<MapView> {
+class _SynchronizeViewState extends State<SynchronizeView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(

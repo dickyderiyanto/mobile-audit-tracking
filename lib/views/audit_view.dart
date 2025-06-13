@@ -2,8 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile_audit_tracking/views/audit_detail_view.dart';
 import '../bloc/audit/audit_bloc.dart';
 import '../repository/audit_repository.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AuditView extends StatefulWidget {
   final String token; // Token dari login
@@ -81,7 +83,7 @@ class _AuditViewState extends State<AuditView> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text(
-                            "11 June, 2025",
+                            "13 June, 2025",
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.white,
@@ -161,7 +163,36 @@ class _AuditViewState extends State<AuditView> {
                                         ),
                                       ),
                                     ),
-                                    onPressed: () {},
+                                    onPressed: () async {
+                                      final latitude =
+                                          group.auditDetails.first.latitude;
+                                      final longitude =
+                                          group.auditDetails.first.longitude;
+                                      print(
+                                        "Navigasi ke koordinat: $latitude, $longitude",
+                                      );
+                                      final Uri url = Uri.parse(
+                                        'https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude',
+                                      );
+
+                                      if (await canLaunchUrl(url)) {
+                                        await launchUrl(
+                                          url,
+                                          mode: LaunchMode.externalApplication,
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(
+                                          // ignore: use_build_context_synchronously
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              "Tidak bisa membuka Google Maps",
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: const [
@@ -179,6 +210,39 @@ class _AuditViewState extends State<AuditView> {
                                       group.auditDetails.map((detail) {
                                         return ListTile(
                                           title: Text(detail.invoiceCode),
+                                          trailing: ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                              foregroundColor: Colors.white,
+                                              shape: ContinuousRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                            onPressed: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder:
+                                                      (context) =>
+                                                          AuditDetailView(
+                                                            token: widget.token,
+                                                            cif: detail.cif,
+                                                          ),
+                                                ),
+                                              );
+                                            },
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: const [
+                                                Text("Checkin"),
+                                                SizedBox(width: 8),
+                                                Icon(
+                                                  Icons.arrow_forward_ios_sharp,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
                                           subtitle: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,

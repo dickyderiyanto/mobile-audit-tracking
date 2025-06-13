@@ -55,6 +55,7 @@ class AuditDetail {
   final double invoiceValue;
   final double paymentRemaining;
   final String salesmanName;
+  final String cif;
   final String latitude;
   final String longitude;
 
@@ -63,6 +64,7 @@ class AuditDetail {
     required this.invoiceValue,
     required this.paymentRemaining,
     required this.salesmanName,
+    required this.cif,
     required this.latitude,
     required this.longitude,
   });
@@ -73,6 +75,7 @@ class AuditDetail {
       invoiceValue: double.parse(json['invoice_value']),
       paymentRemaining: double.parse(json['payment_remaining']),
       salesmanName: json['salesman_name'],
+      cif: json['cif'],
       latitude: json['latitude'],
       longitude: json['longitude'],
     );

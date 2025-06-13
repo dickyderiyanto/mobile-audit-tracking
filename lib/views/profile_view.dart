@@ -33,7 +33,7 @@ class _ProfileViewState extends State<ProfileView> {
             top: 0,
             right: 0,
             left: 0,
-            height: MediaQuery.of(context).size.height * 0.25,
+            height: MediaQuery.of(context).size.height * 0.20,
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.vertical(
@@ -53,7 +53,7 @@ class _ProfileViewState extends State<ProfileView> {
               ),
               child: Container(
                 width: 380,
-                height: 560,
+                height: 420,
                 padding: const EdgeInsets.all(16),
                 child: BlocBuilder<UserInfoBloc, UserInfoState>(
                   builder: (context, state) {
@@ -84,7 +84,7 @@ class _ProfileViewState extends State<ProfileView> {
                           const SizedBox(height: 8),
                           Text("Username: ${user.username}"),
                           Text("Kode User: ${user.userCode}"),
-                          Text("Role: ${user.roleCode}"),
+                          // Text("Role: ${user.roleCode}"),
                           SizedBox(height: 40),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
