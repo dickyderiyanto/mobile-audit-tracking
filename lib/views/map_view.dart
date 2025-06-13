@@ -1,0 +1,21 @@
+import 'package:flutter/material.dart';
+
+class MapView extends StatefulWidget {
+  const MapView({super.key});
+
+  @override
+  State<MapView> createState() => _MapViewState();
+}
+
+class _MapViewState extends State<MapView> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Dashboard"), actions: const []),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(10.0),
+        child: Column(children: []),
+      ),
+    );
+  }
+}
