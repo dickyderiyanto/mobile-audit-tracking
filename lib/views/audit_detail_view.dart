@@ -1,9 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:mobile_audit_tracking/bloc/audit/audit_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile_audit_tracking/views/audit_view.dart';
+import 'package:mobile_audit_tracking/views/camera_view.dart';
 import '../repository/audit_repository.dart';
 
 class AuditDetailView extends StatefulWidget {
@@ -78,13 +78,15 @@ class _AuditDetailViewState extends State<AuditDetailView> {
                             horizontal: 12,
                             // vertical: 12,
                           ),
-                          child: Text(
-                            "List of Audits",
-                            style: GoogleFonts.poppins(
-                              textStyle: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                          child: Center(
+                            child: Text(
+                              "List of Faktur",
+                              style: GoogleFonts.poppins(
+                                textStyle: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
@@ -109,24 +111,24 @@ class _AuditDetailViewState extends State<AuditDetailView> {
                                     children: [
                                       Text("Salesman: ${detail.salesmanName}"),
                                       Text(
-                                        "Tagihan: Rp${detail.invoiceValue.toStringAsFixed(0)}",
+                                        "Tagihan: Rp.${detail.invoiceValue.toStringAsFixed(0)}",
                                       ),
                                       Text(
-                                        "Sisa Bayar: Rp${detail.paymentRemaining.toStringAsFixed(0)}",
+                                        "Sisa Bayar: Rp.${detail.paymentRemaining.toStringAsFixed(0)}",
                                       ),
                                     ],
                                   ),
                                   trailing: IconButton(
                                     icon: const Icon(
-                                      Icons.location_on,
+                                      Icons.check_box,
                                       color: Colors.red,
                                     ),
                                     onPressed: () {
-                                      final lat = detail.latitude;
-                                      final lng = detail.longitude;
-                                      print(
-                                        "Navigasi ke koordinat: $lat, $lng",
-                                      );
+                                      // final lat = detail.latitude;
+                                      // final lng = detail.longitude;
+                                      // print(
+                                      //   "Navigasi ke koordinat: $lat, $lng",
+                                      // );
                                       // bisa tambahkan logika navigasi ke Google Maps di sini
                                     },
                                   ),
@@ -134,6 +136,27 @@ class _AuditDetailViewState extends State<AuditDetailView> {
                               );
                             },
                           ),
+                        ),
+                        // SizedBox(height: 60),
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.done_all),
+                          label: const Text("Selesai"),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.green,
+                            side: const BorderSide(color: Colors.green),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CameraView(),
+                              ),
+                              ModalRoute.withName('/home'),
+                            );
+                          },
                         ),
                       ],
                     ),

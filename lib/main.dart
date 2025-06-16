@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_audit_tracking/bloc/login/login_bloc.dart';
 import 'package:mobile_audit_tracking/repository/auth_repository.dart';
 import 'package:mobile_audit_tracking/repository/user_info_repository.dart';
+import 'package:mobile_audit_tracking/views/audit_view.dart';
 import 'package:mobile_audit_tracking/views/home_view.dart';
 import 'package:mobile_audit_tracking/views/login_view.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -51,6 +52,7 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         ),
         home: initialToken != null ? HomeView() : LoginView(),
+        routes: {'/home': (context) => AuditView(token: initialToken!)},
       ),
     );
   }

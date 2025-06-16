@@ -1,11 +1,16 @@
-// ignore_for_file: depend_on_referenced_packages
+// ignore_for_file: depend_on_referenced_packages, avoid_print, unrelated_type_equality_checks
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile_audit_tracking/core/config/get_location.dart';
 import 'package:mobile_audit_tracking/views/audit_detail_view.dart';
 import '../bloc/audit/audit_bloc.dart';
 import '../repository/audit_repository.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:android_intent_plus/flag.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 
 class AuditView extends StatefulWidget {
   final String token; // Token dari login
@@ -164,33 +169,28 @@ class _AuditViewState extends State<AuditView> {
                                       ),
                                     ),
                                     onPressed: () async {
-                                      final latitude =
-                                          group.auditDetails.first.latitude;
-                                      final longitude =
-                                          group.auditDetails.first.longitude;
-                                      print(
-                                        "Navigasi ke koordinat: $latitude, $longitude",
-                                      );
-                                      final Uri url = Uri.parse(
-                                        'https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude',
-                                      );
-
-                                      if (await canLaunchUrl(url)) {
-                                        await launchUrl(
-                                          url,
-                                          mode: LaunchMode.externalApplication,
-                                        );
-                                      } else {
+                                      if (group.auditDetails.first.latitude ==
+                                              '' &&
+                                          group.auditDetails.first.longitude ==
+                                              '') {
                                         ScaffoldMessenger.of(
-                                          // ignore: use_build_context_synchronously
                                           context,
                                         ).showSnackBar(
-                                          SnackBar(
+                                          const SnackBar(
                                             content: Text(
-                                              "Tidak bisa membuka Google Maps",
+                                              'Koordinat tidak valid',
                                             ),
                                           ),
                                         );
+                                      } else {
+                                        final lat = double.parse(
+                                          group.auditDetails.first.latitude,
+                                        );
+                                        final lng = double.parse(
+                                          group.auditDetails.first.longitude,
+                                        );
+
+                                        openGoogleMaps(lat, lng);
                                       }
                                     },
                                     child: Row(
@@ -219,8 +219,34 @@ class _AuditViewState extends State<AuditView> {
                                                     BorderRadius.circular(12),
                                               ),
                                             ),
-                                            onPressed: () {
+                                            onPressed: () async {
+                                              try {
+                                                final location = GetLocation();
+                                                final position =
+                                                    await location
+                                                        .getCurrentLocation();
+                                                if (position.latitude != '' &&
+                                                    position.longitude != '') {
+                                                  final prefs =
+                                                      await SharedPreferences.getInstance();
+                                                  prefs.setDouble(
+                                                    'current_lat',
+                                                    position.latitude,
+                                                  );
+                                                  prefs.setDouble(
+                                                    'current_long',
+                                                    position.longitude,
+                                                  );
+                                                }
+
+                                                print(
+                                                  'latitude: ${position.latitude}, longitude: ${position.longitude}',
+                                                );
+                                              } catch (e) {
+                                                print('Error: $e');
+                                              }
                                               Navigator.push(
+                                                // ignore: use_build_context_synchronously
                                                 context,
                                                 MaterialPageRoute(
                                                   builder:
@@ -284,5 +310,27 @@ class _AuditViewState extends State<AuditView> {
         ),
       ),
     );
+  }
+}
+
+void openGoogleMaps(double latitude, double longitude) async {
+  if (Platform.isAndroid) {
+    final intent = AndroidIntent(
+      action: 'action_view',
+      data: 'google.navigation:q=$latitude,$longitude&mode=d',
+      package: 'com.google.android.apps.maps',
+      flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK],
+    );
+    await intent.launch();
+  } else {
+    // fallback untuk iOS atau lainnya
+    final url = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude&travelmode=motorcycle',
+    );
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      throw 'Tidak bisa membuka Google Maps';
+    }
   }
 }
