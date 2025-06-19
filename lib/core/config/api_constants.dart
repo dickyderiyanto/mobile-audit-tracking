@@ -3,4 +3,5 @@ class ApiConstants {
   static const String loginEndPoint = "/login";
   static const String auditEndPoint = "/list-audit";
   static const String userInfoEndPoint = "/user/info";
+  static const String statusInvoiceEndPoint = "/status-invoice";
 }

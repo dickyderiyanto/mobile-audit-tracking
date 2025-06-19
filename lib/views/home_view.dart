@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 // import 'package:convex_bottom_bar/convex_bottom_bar.dart';
 import 'package:mobile_audit_tracking/views/audit_view.dart';
 import 'package:mobile_audit_tracking/views/profile_view.dart';
-import 'package:mobile_audit_tracking/views/synchronize_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeView extends StatefulWidget {
@@ -34,7 +33,7 @@ class _HomeViewState extends State<HomeView> {
 
     _pages = [
       AuditView(token: token!),
-      SynchronizeView(),
+      // SynchronizeView(),
       ProfileView(token: token),
     ];
     setState(() {
@@ -68,10 +67,10 @@ class _HomeViewState extends State<HomeView> {
           //   icon: Icon(Icons.sync),
           //   label: 'Sinkronisasi',
           // ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.sync_sharp),
-            label: 'Sinkronisasi',
-          ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(Icons.sync_sharp),
+          //   label: 'Sinkronisasi',
+          // ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Akun'),
         ],
         currentIndex: _selectedIndex,

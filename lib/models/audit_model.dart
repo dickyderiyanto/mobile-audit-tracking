@@ -1,10 +1,12 @@
 class AuditModel {
+  final String idAudit;
   final String userName;
   final String visitDate;
   final double totalPaymentRemaining;
   final List<GroupDetail> groupDetails;
 
   AuditModel({
+    required this.idAudit,
     required this.userName,
     required this.visitDate,
     required this.totalPaymentRemaining,
@@ -13,6 +15,7 @@ class AuditModel {
 
   factory AuditModel.fromJson(Map<String, dynamic> json) {
     return AuditModel(
+      idAudit: json['id_audit'],
       userName: json['user_name'],
       visitDate: json['visit_date'],
       totalPaymentRemaining: double.parse(json['total_payment_remaining']),
@@ -58,8 +61,10 @@ class AuditDetail {
   final String cif;
   final String latitude;
   final String longitude;
+  final String visitStatus;
 
   AuditDetail({
+    required this.visitStatus,
     required this.invoiceCode,
     required this.invoiceValue,
     required this.paymentRemaining,
@@ -71,6 +76,7 @@ class AuditDetail {
 
   factory AuditDetail.fromJson(Map<String, dynamic> json) {
     return AuditDetail(
+      visitStatus: json['visit_status'],
       invoiceCode: json['invoice_code'],
       invoiceValue: double.parse(json['invoice_value']),
       paymentRemaining: double.parse(json['payment_remaining']),
