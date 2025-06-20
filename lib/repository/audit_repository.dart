@@ -17,6 +17,7 @@ class AuditRepository {
 
     if (response.statusCode == 200) {
       final jsonData = jsonDecode(response.body);
+      print(jsonData);
       return AuditModel.fromJson(jsonData['data']);
     } else {
       throw Exception('Failed to load audit data : ${response.statusCode}');

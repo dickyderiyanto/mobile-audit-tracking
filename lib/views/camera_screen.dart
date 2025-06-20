@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'preview_camera_screen.dart';
@@ -10,13 +12,13 @@ class CameraScreen extends StatefulWidget {
   final double longitude;
 
   const CameraScreen({
-    Key? key,
+    super.key,
     required this.cameras,
     required this.idAudit,
     required this.cif,
     required this.latitude,
     required this.longitude,
-  }) : super(key: key);
+  });
 
   @override
   State<CameraScreen> createState() => _CameraScreenState();

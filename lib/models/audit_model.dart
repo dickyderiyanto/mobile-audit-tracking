@@ -76,14 +76,15 @@ class AuditDetail {
 
   factory AuditDetail.fromJson(Map<String, dynamic> json) {
     return AuditDetail(
-      visitStatus: json['visit_status'],
-      invoiceCode: json['invoice_code'],
-      invoiceValue: double.parse(json['invoice_value']),
-      paymentRemaining: double.parse(json['payment_remaining']),
-      salesmanName: json['salesman_name'],
-      cif: json['cif'],
-      latitude: json['latitude'],
-      longitude: json['longitude'],
+      visitStatus: json['visit_status'] ?? '',
+      invoiceCode: json['invoice_code'] ?? '',
+      invoiceValue: double.tryParse(json['invoice_value'] ?? '0') ?? 0.0,
+      paymentRemaining:
+          double.tryParse(json['payment_remaining'] ?? '0') ?? 0.0,
+      salesmanName: json['salesman_name'] ?? '',
+      cif: json['cif'] ?? '',
+      latitude: json['latitude'] ?? '',
+      longitude: json['longitude'] ?? '',
     );
   }
 }

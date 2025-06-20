@@ -137,13 +137,13 @@ class _AuditDetailViewState extends State<AuditDetailView> {
                                         ),
                                       ),
                                       Text(
-                                        "Tagihan: Rp.${FormatCurrency.formatCurrency.format(double.tryParse(detail.invoiceValue.toString()) ?? 0)}",
+                                        "Tagihan: ${FormatCurrency.formatCurrency.format(double.tryParse(detail.invoiceValue.toString()) ?? 0)}",
                                         style: GoogleFonts.poppins(
                                           textStyle: TextStyle(fontSize: 12),
                                         ),
                                       ),
                                       Text(
-                                        "Sisa Bayar: Rp.${FormatCurrency.formatCurrency.format(double.tryParse(detail.paymentRemaining.toString()) ?? 0)}",
+                                        "Sisa Bayar: ${FormatCurrency.formatCurrency.format(double.tryParse(detail.paymentRemaining.toString()) ?? 0)}",
                                         style: GoogleFonts.poppins(
                                           textStyle: TextStyle(fontSize: 12),
                                         ),

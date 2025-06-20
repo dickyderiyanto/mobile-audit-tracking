@@ -13,13 +13,13 @@ class PreviewCameraScreen extends StatelessWidget {
   final double longitude;
 
   const PreviewCameraScreen({
-    Key? key,
+    super.key,
     required this.imageFile,
     required this.idAudit,
     required this.cif,
     required this.latitude,
     required this.longitude,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
