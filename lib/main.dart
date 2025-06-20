@@ -10,7 +10,6 @@ import 'package:mobile_audit_tracking/views/audit_view.dart';
 import 'package:mobile_audit_tracking/views/home_view.dart';
 import 'package:mobile_audit_tracking/views/login_view.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mobile_audit_tracking/views/preview_camera_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bloc/user_info/user_info_bloc.dart';
 

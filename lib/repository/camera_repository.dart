@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile_audit_tracking/core/config/api_constants.dart';
-import 'package:mobile_audit_tracking/views/audit_view.dart';
 import 'package:mobile_audit_tracking/views/home_view.dart';
 import 'package:path/path.dart' as path;
 import 'package:image_picker/image_picker.dart';

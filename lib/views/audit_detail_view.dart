@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_audit_tracking/bloc/audit/audit_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile_audit_tracking/core/config/format_currency.dart';
 import 'package:mobile_audit_tracking/repository/status_invoice_repository.dart';
 import 'package:mobile_audit_tracking/views/camera_screen.dart';
 import '../models/invoice_status_model.dart';
@@ -115,17 +116,37 @@ class _AuditDetailViewState extends State<AuditDetailView> {
                                 ),
                                 elevation: 4,
                                 child: ListTile(
-                                  title: Text("Invoice: ${detail.invoiceCode}"),
+                                  title: Text(
+                                    "Invoice: ${detail.invoiceCode}",
+                                    style: GoogleFonts.poppins(
+                                      textStyle: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
                                   subtitle: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text("Salesman: ${detail.salesmanName}"),
                                       Text(
-                                        "Tagihan: Rp.${detail.invoiceValue.toStringAsFixed(0)}",
+                                        "Salesman: ${detail.salesmanName}",
+                                        style: GoogleFonts.poppins(
+                                          textStyle: TextStyle(fontSize: 12),
+                                        ),
                                       ),
                                       Text(
-                                        "Sisa Bayar: Rp.${detail.paymentRemaining.toStringAsFixed(0)}",
+                                        "Tagihan: Rp.${FormatCurrency.formatCurrency.format(double.tryParse(detail.invoiceValue.toString()) ?? 0)}",
+                                        style: GoogleFonts.poppins(
+                                          textStyle: TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                      Text(
+                                        "Sisa Bayar: Rp.${FormatCurrency.formatCurrency.format(double.tryParse(detail.paymentRemaining.toString()) ?? 0)}",
+                                        style: GoogleFonts.poppins(
+                                          textStyle: TextStyle(fontSize: 12),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -184,9 +205,7 @@ class _AuditDetailViewState extends State<AuditDetailView> {
             onPressed: () async {
               if (selectedInvoice!.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Pilih minimal satu invoice terlebih dahulu'),
-                  ),
+                  SnackBar(content: Text('Pilih minimal satu invoice')),
                 );
                 return;
               }

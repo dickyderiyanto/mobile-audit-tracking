@@ -1,12 +1,14 @@
-// ignore_for_file: depend_on_referenced_packages, avoid_print, unrelated_type_equality_checks
+// ignore_for_file: depend_on_referenced_packages, avoid_print, unrelated_type_equality_checks, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile_audit_tracking/core/config/format_currency.dart';
 import 'package:mobile_audit_tracking/core/config/get_location.dart';
+import 'package:mobile_audit_tracking/models/audit_model.dart';
 import 'package:mobile_audit_tracking/views/audit_detail_view.dart';
 import 'package:mobile_audit_tracking/views/login_view.dart';
 import '../bloc/audit/audit_bloc.dart';
-import '../models/audit_model.dart' show GroupDetail;
+// import '../models/audit_model.dart' show AuditDetail, GroupDetail;
 import '../repository/audit_repository.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:android_intent_plus/android_intent.dart';
@@ -14,6 +16,8 @@ import 'package:android_intent_plus/flag.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:safe_device/safe_device.dart';
 
 import '../repository/auth_repository.dart' show AuthRepository;
 
@@ -95,26 +99,29 @@ class _AuditViewState extends State<AuditView> {
                         SizedBox(height: 20),
                         Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
+                            horizontal: 14,
                             // vertical: 12,
                           ),
                           child: Text(
                             "Today",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                            style: GoogleFonts.poppins(
+                              textStyle: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
                           child: Text(
                             DateFormat('dd MMMM, yyyy').format(DateTime.now()),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white,
-                              // fontWeight: FontWeight.bold,
+                            style: GoogleFonts.poppins(
+                              textStyle: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
@@ -172,14 +179,16 @@ class _AuditViewState extends State<AuditView> {
                               return Card(
                                 margin: const EdgeInsets.symmetric(
                                   horizontal: 12,
-                                  vertical: 8,
+                                  vertical: 4,
                                 ),
                                 elevation: 4,
                                 child: ExpansionTile(
                                   title: Text(
                                     group.customerName,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black,
                                     ),
                                   ),
 
@@ -191,9 +200,7 @@ class _AuditViewState extends State<AuditView> {
                                               : Colors.green,
                                       foregroundColor: Colors.white,
                                       shape: ContinuousRectangleBorder(
-                                        borderRadius: BorderRadius.circular(
-                                          64.0,
-                                        ),
+                                        borderRadius: BorderRadius.circular(16),
                                       ),
                                     ),
                                     onPressed: () async {
@@ -233,8 +240,17 @@ class _AuditViewState extends State<AuditView> {
                                     },
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
-                                      children: const [
-                                        Text("Directions"),
+                                      children: [
+                                        Text(
+                                          "Directions",
+                                          style: GoogleFonts.poppins(
+                                            textStyle: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
                                         SizedBox(width: 8),
                                         Icon(Icons.arrow_forward_ios_sharp),
                                       ],
@@ -243,11 +259,21 @@ class _AuditViewState extends State<AuditView> {
 
                                   subtitle: Text(
                                     "Area: ${group.customerAreaName}",
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: Colors.grey[800],
+                                    ),
                                   ),
                                   children:
                                       group.auditDetails.map((detail) {
                                         return ListTile(
-                                          title: Text(detail.invoiceCode),
+                                          title: Text(
+                                            detail.invoiceCode,
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 12,
+                                              color: Colors.grey[800],
+                                            ),
+                                          ),
                                           trailing: ElevatedButton(
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor:
@@ -270,47 +296,77 @@ class _AuditViewState extends State<AuditView> {
                                                         final position =
                                                             await location
                                                                 .getCurrentLocation();
-                                                        if (position.latitude !=
-                                                                '' &&
-                                                            position.longitude !=
-                                                                '') {
-                                                          final prefs =
-                                                              await SharedPreferences.getInstance();
-                                                          prefs.setDouble(
-                                                            'current_lat',
-                                                            position.latitude,
+
+                                                        final isMockLocation =
+                                                            await SafeDevice
+                                                                .isMockLocation;
+                                                        if (isMockLocation) {
+                                                          //fake gps
+                                                          ScaffoldMessenger.of(
+                                                            context,
+                                                          ).showSnackBar(
+                                                            const SnackBar(
+                                                              content: Text(
+                                                                "Terdeteksi menggunakan Fake GPS!",
+                                                              ),
+                                                              backgroundColor:
+                                                                  Colors.red,
+                                                            ),
                                                           );
-                                                          prefs.setDouble(
-                                                            'current_long',
-                                                            position.longitude,
-                                                          );
+                                                          return; // Stop di sini
                                                         }
+
+                                                        final prefs =
+                                                            await SharedPreferences.getInstance();
+                                                        prefs.setDouble(
+                                                          'current_lat',
+                                                          position.latitude,
+                                                        );
+                                                        prefs.setDouble(
+                                                          'current_long',
+                                                          position.longitude,
+                                                        );
 
                                                         print(
                                                           'latitude: ${position.latitude}, longitude: ${position.longitude}',
                                                         );
+
+                                                        // Lanjut ke halaman detail jika lolos pengecekan
+                                                        await Navigator.push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                            builder:
+                                                                (
+                                                                  context,
+                                                                ) => AuditDetailView(
+                                                                  token:
+                                                                      widget
+                                                                          .token,
+                                                                  cif:
+                                                                      detail
+                                                                          .cif,
+                                                                  idAudit:
+                                                                      audit
+                                                                          .idAudit,
+                                                                ),
+                                                          ),
+                                                        );
                                                       } catch (e) {
                                                         print('Error: $e');
+                                                        ScaffoldMessenger.of(
+                                                          context,
+                                                        ).showSnackBar(
+                                                          SnackBar(
+                                                            content: Text(
+                                                              "Error saat ambil lokasi: $e",
+                                                            ),
+                                                            backgroundColor:
+                                                                Colors.red,
+                                                          ),
+                                                        );
                                                       }
-                                                      Navigator.push(
-                                                        // ignore: use_build_context_synchronously
-                                                        context,
-                                                        MaterialPageRoute(
-                                                          builder:
-                                                              (
-                                                                context,
-                                                              ) => AuditDetailView(
-                                                                token:
-                                                                    widget
-                                                                        .token,
-                                                                cif: detail.cif,
-                                                                idAudit:
-                                                                    audit
-                                                                        .idAudit,
-                                                              ),
-                                                        ),
-                                                      );
                                                     },
+
                                             child: Row(
                                               mainAxisSize: MainAxisSize.min,
                                               children: const [
@@ -326,14 +382,26 @@ class _AuditViewState extends State<AuditView> {
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
+                                              // Text(
+                                              //   "Salesman: ${detail.salesmanName}",
+                                              //   style: GoogleFonts.poppins(
+                                              //     fontSize: 12,
+                                              //     color: Colors.grey[800],
+                                              //   ),
+                                              // ),
                                               Text(
-                                                "Salesman: ${detail.salesmanName}",
+                                                "Tagihan: ${FormatCurrency.formatCurrency.format(double.tryParse(detail.invoiceValue.toString()) ?? 0)}",
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[800],
+                                                ),
                                               ),
                                               Text(
-                                                "Tagihan: Rp. ${detail.invoiceValue.toStringAsFixed(0)}",
-                                              ),
-                                              Text(
-                                                "Sisa: Rp. ${detail.paymentRemaining.toStringAsFixed(0)}",
+                                                "Sisa: ${FormatCurrency.formatCurrency.format(double.tryParse(detail.paymentRemaining.toString()) ?? 0)}",
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[800],
+                                                ),
                                               ),
                                               // Text("Tanggal: ${detail.invoiceDate}"),
                                             ],
@@ -369,24 +437,54 @@ class _AuditViewState extends State<AuditView> {
                 return Center(child: CircularProgressIndicator());
               } else if (state is AuditLoaded) {
                 final audit = state.audit;
+                final isAllVisited = audit.groupDetails
+                    .expand((group) => group.auditDetails)
+                    .every((item) => item.visitStatus == "1");
 
                 return OutlinedButton.icon(
-                  icon: const Icon(Icons.done_all_rounded),
-                  label: const Text("Selesai Perjalanan"),
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade800,
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.grey),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  icon: const Icon(Icons.done_all_rounded, color: Colors.white),
+                  label: Text(
+                    "Selesaikan Perjalanan",
+                    style: GoogleFonts.poppins(
+                      textStyle: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
-                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                  style: ButtonStyle(
+                    backgroundColor: WidgetStateProperty.resolveWith<Color?>((
+                      states,
+                    ) {
+                      if (states.contains(WidgetState.disabled)) {
+                        return Colors.grey;
+                      }
+                      return Colors.blue.shade800;
+                    }),
+                    foregroundColor: WidgetStateProperty.resolveWith<Color?>((
+                      states,
+                    ) {
+                      if (states.contains(WidgetState.disabled)) {
+                        return Colors.grey;
+                      }
+                      return Colors.white;
+                    }),
+                    side: WidgetStateProperty.all(
+                      const BorderSide(color: Colors.grey),
+                    ),
+                    shape: WidgetStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    minimumSize: WidgetStateProperty.all(
+                      const Size(double.infinity, 48),
+                    ),
                   ),
                   onPressed:
-                      audit.groupDetails.first.auditDetails.first.visitStatus ==
-                              "0"
-                          ? null
-                          : () async {
+                      isAllVisited
+                          ? () async {
                             bool confirm = false;
                             await showDialog<void>(
                               context: context,
@@ -416,6 +514,7 @@ class _AuditViewState extends State<AuditView> {
                                         style: TextStyle(color: Colors.white),
                                       ),
                                     ),
+
                                     ElevatedButton(
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.green,
@@ -428,7 +527,6 @@ class _AuditViewState extends State<AuditView> {
 
                                         // Hapus token dan pindah ke login
                                         await AuthRepository().logout();
-                                        // ignore: use_build_context_synchronously
                                         Navigator.of(
                                           context,
                                         ).pushAndRemoveUntil(
@@ -451,7 +549,8 @@ class _AuditViewState extends State<AuditView> {
                             if (confirm) {
                               print("Confirmed!");
                             }
-                          },
+                          }
+                          : null,
                 );
               }
 
