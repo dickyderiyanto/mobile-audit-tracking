@@ -34,6 +34,7 @@ class _AuditViewState extends State<AuditView> {
   late AuditBloc _auditBloc;
   late TextEditingController _searchController;
   List<GroupDetail> filteredGroupDetails = [];
+  bool checkinButtonShown = false;
 
   @override
   void initState() {
@@ -274,22 +275,23 @@ class _AuditViewState extends State<AuditView> {
                                               color: Colors.grey[800],
                                             ),
                                           ),
-                                          trailing: ElevatedButton(
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                                  detail.visitStatus == "0"
-                                                      ? Colors.red
-                                                      : Colors.green,
-                                              foregroundColor: Colors.white,
-                                              shape: ContinuousRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                            ),
-                                            onPressed:
-                                                detail.visitStatus == "1"
-                                                    ? null
-                                                    : () async {
+                                          trailing:
+                                              (detail.visitStatus == "0" &&
+                                                      !checkinButtonShown)
+                                                  ? ElevatedButton(
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor:
+                                                          Colors.red,
+                                                      foregroundColor:
+                                                          Colors.white,
+                                                      shape: ContinuousRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              12,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                    onPressed: () async {
                                                       try {
                                                         final location =
                                                             GetLocation();
@@ -301,7 +303,6 @@ class _AuditViewState extends State<AuditView> {
                                                             await SafeDevice
                                                                 .isMockLocation;
                                                         if (isMockLocation) {
-                                                          //fake gps
                                                           ScaffoldMessenger.of(
                                                             context,
                                                           ).showSnackBar(
@@ -313,7 +314,7 @@ class _AuditViewState extends State<AuditView> {
                                                                   Colors.red,
                                                             ),
                                                           );
-                                                          return; // Stop di sini
+                                                          return;
                                                         }
 
                                                         final prefs =
@@ -331,7 +332,6 @@ class _AuditViewState extends State<AuditView> {
                                                           'latitude: ${position.latitude}, longitude: ${position.longitude}',
                                                         );
 
-                                                        // Lanjut ke halaman detail jika lolos pengecekan
                                                         await Navigator.push(
                                                           context,
                                                           MaterialPageRoute(
@@ -366,18 +366,20 @@ class _AuditViewState extends State<AuditView> {
                                                         );
                                                       }
                                                     },
-
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: const [
-                                                Text("Checkin"),
-                                                SizedBox(width: 8),
-                                                Icon(
-                                                  Icons.arrow_forward_ios_sharp,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
+                                                    child: Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: const [
+                                                        Text("Checkin"),
+                                                        SizedBox(width: 8),
+                                                        Icon(
+                                                          Icons
+                                                              .arrow_forward_ios_sharp,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  )
+                                                  : null,
                                           subtitle: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,

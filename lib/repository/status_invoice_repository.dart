@@ -34,4 +34,31 @@ class StatusInvoiceRepository {
       throw Exception(error['message'] ?? 'Gagal Update invoice');
     }
   }
+
+  Future<void> postKeteranganToko(
+    String auditId,
+    String cif,
+    String keterangan,
+  ) async {
+    final url = Uri.parse('${ApiConstants.baseUrl}/audit-cif/keterangan');
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode({
+        "audit_id": auditId,
+        "cif": cif,
+        "keterangan": keterangan,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Gagal kirim keterangan toko');
+    }
+  }
 }
