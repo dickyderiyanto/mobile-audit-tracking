@@ -63,6 +63,7 @@ class _AuditViewState extends State<AuditView> {
                 return const Center(child: CircularProgressIndicator());
               } else if (state is AuditLoaded) {
                 final audit = state.audit;
+                final statusVisit = audit.statusVisit;
                 if (filteredGroupDetails.isEmpty) {
                   filteredGroupDetails = audit.groupDetails;
                   _searchController.addListener(() {
@@ -77,7 +78,9 @@ class _AuditViewState extends State<AuditView> {
                     });
                   });
                 }
-
+                if (statusVisit == "1") {
+                  return Center(child: Text("Data perjalanan sudah di tutup"));
+                }
                 return Stack(
                   children: [
                     Positioned(

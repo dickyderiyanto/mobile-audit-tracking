@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:convert';
 
 import 'package:mobile_audit_tracking/core/config/api_constants.dart';
@@ -21,6 +23,30 @@ class AuditRepository {
       return AuditModel.fromJson(jsonData['data']);
     } else {
       throw Exception('Failed to load audit data : ${response.statusCode}');
+    }
+  }
+
+  Future<AuditModel> fetchAuditById(
+    String token,
+    String idAudit,
+    String cif,
+  ) async {
+    final url = Uri.parse(
+      "${ApiConstants.baseUrl}${ApiConstants.auditEndPoint}/$idAudit?cif=$cif",
+    );
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final jsonData = jsonDecode(response.body);
+      print(jsonData);
+      return AuditModel.fromJson(jsonData['data']);
+    } else {
+      throw Exception(
+        'Failed to load audit data by ID: ${response.statusCode}',
+      );
     }
   }
 }

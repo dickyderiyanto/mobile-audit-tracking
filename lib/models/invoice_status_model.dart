@@ -1,3 +1,4 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 class InvoiceDetailStatusModel {
   final String invoiceCode;
   final String keterangan;
@@ -50,6 +51,38 @@ class InvoiceStatusModel {
       'cif': cif,
       'status_invoice': statusInvoice,
       'invoices': invoices.map((e) => e.toJson()).toList(),
+    };
+  }
+}
+
+class AuditStatusVisit {
+  final String idAudit;
+  final String idUser;
+  final String statusVisit;
+  final String updatedBy;
+
+  AuditStatusVisit({
+    required this.idAudit,
+    required this.idUser,
+    required this.statusVisit,
+    required this.updatedBy,
+  });
+
+  factory AuditStatusVisit.fromJson(Map<String, dynamic> json) {
+    return AuditStatusVisit(
+      idAudit: json['id_audit'],
+      idUser: json['user_id'],
+      statusVisit: json['status_visit'],
+      updatedBy: json['updated_by'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id_audit': idAudit,
+      'user_id': idUser,
+      'status_visit': statusVisit,
+      'updated_by': updatedBy,
     };
   }
 }

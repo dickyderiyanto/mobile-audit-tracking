@@ -19,5 +19,19 @@ class AuditBloc extends Bloc<AuditEvent, AuditState> {
         emit(AuditError(e.toString()));
       }
     });
+
+    on<FetchAuditDataById>((event, emit) async {
+      emit(AuditLoading());
+      try {
+        final data = await repository.fetchAuditById(
+          event.token,
+          event.idAudit,
+          event.cif,
+        );
+        emit(AuditLoaded(data));
+      } catch (e) {
+        emit(AuditError(e.toString()));
+      }
+    });
   }
 }

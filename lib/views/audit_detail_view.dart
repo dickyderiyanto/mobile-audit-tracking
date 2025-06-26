@@ -34,21 +34,29 @@ class _AuditDetailViewState extends State<AuditDetailView> {
   Map<String, String> selectedReasonPerInvoice = {};
   final TextEditingController keteranganController = TextEditingController();
 
-  final List<String> fakturOptions = [
-    "Barang diterima, faktur belum bayar.",
-    "Barang diterima, faktur sudah dibayar.",
-    "Barang tidak diterima toko",
-    "Faktur udah cicil, nilai benar per hari ini.",
-    "Toko tidak ditemukan",
-  ];
+  final Map<String, List<String>> fakturOptions = {
+    "Barang diterima, faktur belum bayar.": [
+      "Belum jatuh tempo",
+      "Sales tidak kunjungan",
+      "Barang masih ada",
+    ],
+    "Barang diterima, faktur sudah dibayar.": [],
+    "Barang tidak diterima toko": [],
+    "Faktur udah cicil, nilai benar per hari ini.": [],
+    "Toko tidak ditemukan": [],
+  };
 
   String? selectedReason;
+  Map<String, String?> selectedSubReasonPerInvoice = {};
 
   @override
   void initState() {
     super.initState();
     _auditBloc = AuditBloc(AuditRepository());
-    _auditBloc.add(FetchAuditData(widget.token));
+    // _auditBloc.add(FetchAuditData(widget.token));
+    _auditBloc.add(
+      FetchAuditDataById(widget.token, widget.idAudit, widget.cif),
+    );
   }
 
   @override
@@ -122,6 +130,9 @@ class _AuditDetailViewState extends State<AuditDetailView> {
                                 filteredDetails.length, // +1 untuk dropdown
                             itemBuilder: (context, index) {
                               final detail = filteredDetails[index];
+                              final isChecked = selectedInvoice?.contains(
+                                detail.invoiceCode,
+                              );
                               return Card(
                                 margin: const EdgeInsets.symmetric(
                                   horizontal: 12,
@@ -215,11 +226,11 @@ class _AuditDetailViewState extends State<AuditDetailView> {
                                         hint: Text(
                                           "Pilih keterangan faktur",
                                           style: GoogleFonts.poppins(
-                                            textStyle: TextStyle(fontSize: 12),
+                                            fontSize: 12,
                                           ),
                                         ),
                                         items:
-                                            fakturOptions.map((option) {
+                                            fakturOptions.keys.map((option) {
                                               return DropdownMenuItem<String>(
                                                 value: option,
                                                 child: Text(
@@ -231,18 +242,83 @@ class _AuditDetailViewState extends State<AuditDetailView> {
                                               );
                                             }).toList(),
                                         onChanged:
-                                            selectedInvoice!.contains(
-                                                  detail.invoiceCode,
-                                                )
+                                            isChecked!
                                                 ? (value) {
                                                   setState(() {
                                                     selectedReasonPerInvoice[detail
                                                             .invoiceCode] =
                                                         value!;
+                                                    // Reset sub-keterangan ketika kategori diganti
+                                                    selectedSubReasonPerInvoice[detail
+                                                            .invoiceCode] =
+                                                        null;
                                                   });
                                                 }
-                                                : null, // nonaktif kalau belum dipilih
+                                                : null,
                                       ),
+                                      const SizedBox(height: 8),
+
+                                      // Dropdown sub-keterangan (jika ada)
+                                      if (fakturOptions[selectedReasonPerInvoice[detail
+                                                  .invoiceCode]] !=
+                                              null &&
+                                          fakturOptions[selectedReasonPerInvoice[detail
+                                                  .invoiceCode]]!
+                                              .isNotEmpty)
+                                        DropdownButtonFormField<String>(
+                                          isExpanded: true,
+                                          decoration: InputDecoration(
+                                            labelText: "Detail Keterangan",
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 10,
+                                                ),
+                                          ),
+                                          value:
+                                              selectedSubReasonPerInvoice[detail
+                                                  .invoiceCode],
+                                          hint: Text(
+                                            "Pilih detail keterangan",
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          items:
+                                              fakturOptions[selectedReasonPerInvoice[detail
+                                                      .invoiceCode]]!
+                                                  .map(
+                                                    (
+                                                      subOption,
+                                                    ) => DropdownMenuItem<
+                                                      String
+                                                    >(
+                                                      value: subOption,
+                                                      child: Text(
+                                                        subOption,
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                              fontSize: 12,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                  )
+                                                  .toList(),
+                                          onChanged:
+                                              isChecked
+                                                  ? (value) {
+                                                    setState(() {
+                                                      selectedSubReasonPerInvoice[detail
+                                                              .invoiceCode] =
+                                                          value!;
+                                                    });
+                                                  }
+                                                  : null,
+                                        ),
                                     ],
                                   ),
                                 ),
@@ -310,9 +386,16 @@ class _AuditDetailViewState extends State<AuditDetailView> {
 
               final invoices =
                   selectedInvoice!.map((code) {
+                    final kategori = selectedReasonPerInvoice[code] ?? '';
+                    final sub = selectedSubReasonPerInvoice[code];
+                    final fullKeterangan =
+                        sub != null && sub.isNotEmpty
+                            ? '$kategori - $sub'
+                            : kategori;
+
                     return InvoiceDetailStatusModel(
                       invoiceCode: code,
-                      keterangan: selectedReasonPerInvoice[code] ?? '',
+                      keterangan: fullKeterangan,
                     );
                   }).toList();
 
@@ -324,61 +407,131 @@ class _AuditDetailViewState extends State<AuditDetailView> {
               );
               await showDialog(
                 context: context,
+                barrierDismissible: false,
                 builder: (context) {
-                  return AlertDialog(
-                    title: Text('Catatan Toko'),
-                    content: TextField(
-                      controller: keteranganController,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        hintText: 'Masukkan keterangan toko...',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: Text('Batal'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: Text('Lanjut'),
-                      ),
-                    ],
+                  bool isDialogLoading = false;
+
+                  return StatefulBuilder(
+                    builder: (context, setStateDialog) {
+                      return Stack(
+                        children: [
+                          AlertDialog(
+                            title: Text('Catatan Toko'),
+                            content: TextField(
+                              controller: keteranganController,
+                              maxLines: 3,
+                              decoration: InputDecoration(
+                                hintText: 'Masukkan keterangan toko...',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed:
+                                    isDialogLoading
+                                        ? null
+                                        : () => Navigator.of(context).pop(),
+                                child: Text('Batal'),
+                              ),
+                              ElevatedButton(
+                                onPressed:
+                                    isDialogLoading
+                                        ? null
+                                        : () async {
+                                          if (keteranganController.text
+                                              .trim()
+                                              .isEmpty) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Keterangan toko wajib diisi',
+                                                ),
+                                              ),
+                                            );
+                                            return;
+                                          }
+                                          setStateDialog(
+                                            () => isDialogLoading = true,
+                                          );
+
+                                          try {
+                                            final repo =
+                                                StatusInvoiceRepository();
+                                            final response = await repo
+                                                .updateInvoiceStatus(request);
+
+                                            await repo.postKeteranganToko(
+                                              widget.idAudit,
+                                              widget.cif,
+                                              keteranganController.text,
+                                            );
+
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(content: Text(response)),
+                                            );
+
+                                            final cameras =
+                                                await availableCameras();
+
+                                            // Tutup dialog sebelum pindah halaman
+                                            Navigator.of(context).pop();
+
+                                            // Pindah ke CameraScreen
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder:
+                                                    (_) => CameraScreen(
+                                                      cameras: cameras,
+                                                      idAudit: widget.idAudit,
+                                                      cif: widget.cif,
+                                                      latitude: currLat ?? 0.0,
+                                                      longitude:
+                                                          currLong ?? 0.0,
+                                                    ),
+                                              ),
+                                            );
+                                          } catch (e) {
+                                            setStateDialog(
+                                              () => isDialogLoading = false,
+                                            );
+
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Gagal update invoice: $e',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                child: Text('Lanjut'),
+                              ),
+                            ],
+                          ),
+
+                          if (isDialogLoading)
+                            Positioned.fill(
+                              child: Container(
+                                // ignore: deprecated_member_use
+                                color: Colors.black.withOpacity(0.3),
+                                child: Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
                   );
                 },
               );
-              try {
-                final repo = StatusInvoiceRepository();
-                final response = await repo.updateInvoiceStatus(request);
-                await repo.postKeteranganToko(
-                  widget.idAudit,
-                  widget.cif,
-                  keteranganController.text,
-                );
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text(response)));
-
-                final cameras = await availableCameras();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) => CameraScreen(
-                          cameras: cameras,
-                          idAudit: widget.idAudit,
-                          cif: widget.cif,
-                          latitude: currLat ?? 0.0,
-                          longitude: currLong ?? 0.0,
-                        ),
-                  ),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Gagal update invoice: $e')),
-                );
-              }
             },
           ),
         ),
