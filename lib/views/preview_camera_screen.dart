@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../bloc/camera/camera_bloc.dart';
+import '../database/database_helper.dart';
 
 class PreviewCameraScreen extends StatelessWidget {
   final XFile imageFile;
@@ -60,16 +61,41 @@ class PreviewCameraScreen extends StatelessWidget {
                               minimumSize: const Size(double.infinity, 48),
                             ),
                             onPressed: () async {
-                              context.read<CameraBloc>().add(
-                                TakePhotoEvent(
-                                  context: context,
-                                  photo: imageFile,
-                                  idAudit: idAudit,
+                              final isOnline = await isConnected();
+                              if (isOnline) {
+                                context.read<CameraBloc>().add(
+                                  TakePhotoEvent(
+                                    context: context,
+                                    photo: imageFile,
+                                    idAudit: idAudit,
+                                    cif: cif,
+                                    latitude: latitude,
+                                    longitude: longitude,
+                                  ),
+                                );
+                              } else {
+                                // Simpan ke SQLite
+                                final db = DatabaseHelper();
+                                await db.insertOfflinePhoto(
+                                  auditId: idAudit,
                                   cif: cif,
-                                  latitude: latitude,
-                                  longitude: longitude,
-                                ),
-                              );
+                                  filePath: imageFile.path,
+                                  latitude: latitude.toString(),
+                                  longitude: longitude.toString(),
+                                );
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text("📷 Foto disimpan offline"),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+
+                                Navigator.popUntil(
+                                  context,
+                                  (route) => route.isFirst,
+                                );
+                              }
                             },
                           ),
                 ),
@@ -79,5 +105,17 @@ class PreviewCameraScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+Future<bool> isConnected() async {
+  try {
+    final result = await InternetAddress.lookup('audit.jessindo.net');
+    final connected = result.isNotEmpty && result.first.rawAddress.isNotEmpty;
+    print("🌐 Internet status: $connected");
+    return connected;
+  } catch (e) {
+    print("🚫 Tidak ada koneksi internet: $e");
+    return false;
   }
 }

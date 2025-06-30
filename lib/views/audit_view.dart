@@ -18,6 +18,7 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:safe_device/safe_device.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 import '../repository/auth_repository.dart' show AuthRepository;
 
@@ -30,32 +31,91 @@ class AuditView extends StatefulWidget {
   State<AuditView> createState() => _AuditViewState();
 }
 
-class _AuditViewState extends State<AuditView> {
+class _AuditViewState extends State<AuditView>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   late AuditBloc _auditBloc;
   late TextEditingController _searchController;
   List<GroupDetail> filteredGroupDetails = [];
   bool checkinButtonShown = false;
-
+  bool isLoading = false;
   @override
   void initState() {
     super.initState();
     _auditBloc = AuditBloc(AuditRepository());
-    _auditBloc.add(FetchAuditData(widget.token));
     _searchController = TextEditingController();
+
+    _searchController.addListener(() {
+      final query = _searchController.text.toLowerCase();
+      if (_auditBloc.state is AuditLoaded) {
+        final audit = (_auditBloc.state as AuditLoaded).audit;
+        setState(() {
+          filteredGroupDetails =
+              audit.groupDetails
+                  .where(
+                    (group) => group.customerName.toLowerCase().contains(query),
+                  )
+                  .toList();
+        });
+      }
+    });
+
+    // checkAndLoadAudit();
+  }
+
+  bool _isFirstLoad = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_isFirstLoad) {
+      checkAndLoadAudit();
+      _isFirstLoad = false;
+    }
+  }
+
+  Future<void> checkAndLoadAudit() async {
+    final isOnline = await isConnected();
+    final prefs = await SharedPreferences.getInstance();
+    final lastAuditId = prefs.getString('id_audit');
+
+    if (isOnline) {
+      _auditBloc.add(FetchAuditData(widget.token));
+    } else if (lastAuditId != null) {
+      _auditBloc.add(LoadAuditFromLocal(lastAuditId));
+      print('🔍 LoadAuditFromLocal dipanggil: $lastAuditId');
+    } else {
+      print("No local audit ID found");
+    }
+  }
+
+  Future<bool> isConnected() async {
+    try {
+      final result = await InternetAddress.lookup('audit.jessindo.net');
+      final connected = result.isNotEmpty && result.first.rawAddress.isNotEmpty;
+      print("🌐 Internet status: $connected");
+      return connected;
+    } catch (e) {
+      print("🚫 Tidak ada koneksi internet: $e");
+      return false;
+    }
   }
 
   @override
   void dispose() {
     _auditBloc.close();
+    _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return BlocProvider.value(
       value: _auditBloc,
       child: Scaffold(
-        // appBar: AppBar(title: const Text("Audit Report")),
         body: SafeArea(
           child: BlocBuilder<AuditBloc, AuditState>(
             builder: (context, state) {
@@ -64,23 +124,24 @@ class _AuditViewState extends State<AuditView> {
               } else if (state is AuditLoaded) {
                 final audit = state.audit;
                 final statusVisit = audit.statusVisit;
-                if (filteredGroupDetails.isEmpty) {
-                  filteredGroupDetails = audit.groupDetails;
-                  _searchController.addListener(() {
-                    final query = _searchController.text.toLowerCase();
-                    setState(() {
-                      filteredGroupDetails =
-                          audit.groupDetails.where((group) {
-                            return group.customerName.toLowerCase().contains(
-                              query,
-                            );
-                          }).toList();
-                    });
+
+                // Perbarui isi filteredGroupDetails di sini
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  final query = _searchController.text.toLowerCase();
+                  setState(() {
+                    filteredGroupDetails =
+                        audit.groupDetails.where((group) {
+                          return group.customerName.toLowerCase().contains(
+                            query,
+                          );
+                        }).toList();
                   });
-                }
+                });
+
                 if (statusVisit == "1") {
                   return Center(child: Text("Data perjalanan sudah di tutup"));
                 }
+
                 return Stack(
                   children: [
                     Positioned(
@@ -100,22 +161,38 @@ class _AuditViewState extends State<AuditView> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SizedBox(height: 20),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            // vertical: 12,
-                          ),
-                          child: Text(
-                            "Today",
-                            style: GoogleFonts.poppins(
-                              textStyle: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                        SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                              ),
+                              child: Text(
+                                "Today",
+                                style: GoogleFonts.poppins(
+                                  textStyle: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                            IconButton(
+                              color: Colors.white,
+                              icon: Icon(Icons.refresh),
+                              onPressed: () async {
+                                final prefs =
+                                    await SharedPreferences.getInstance();
+                                final idAudit = prefs.getString('id_audit');
+                                if (idAudit != null) {
+                                  _auditBloc.add(LoadAuditFromLocal(idAudit));
+                                }
+                              },
+                            ),
+                          ],
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -155,7 +232,6 @@ class _AuditViewState extends State<AuditView> {
                                 Expanded(
                                   child: TextFormField(
                                     controller: _searchController,
-                                    initialValue: null,
                                     decoration: InputDecoration.collapsed(
                                       filled: true,
                                       fillColor: Colors.transparent,
@@ -163,9 +239,7 @@ class _AuditViewState extends State<AuditView> {
                                       hintStyle: TextStyle(
                                         color: Colors.grey[500],
                                       ),
-                                      hoverColor: Colors.transparent,
                                     ),
-                                    onFieldSubmitted: (value) {},
                                   ),
                                 ),
                               ],
@@ -195,7 +269,6 @@ class _AuditViewState extends State<AuditView> {
                                       color: Colors.black,
                                     ),
                                   ),
-
                                   trailing: ElevatedButton(
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor:
@@ -208,20 +281,14 @@ class _AuditViewState extends State<AuditView> {
                                       ),
                                     ),
                                     onPressed: () async {
-                                      if (group.auditDetails.first.latitude ==
-                                                  '' &&
-                                              group
-                                                      .auditDetails
-                                                      .first
-                                                      .longitude ==
-                                                  '' ||
-                                          group.auditDetails.first.latitude ==
-                                                  'Belum disetting' &&
-                                              group
-                                                      .auditDetails
-                                                      .first
-                                                      .longitude ==
-                                                  'Belum disetting') {
+                                      final latStr =
+                                          group.auditDetails.first.latitude;
+                                      final longStr =
+                                          group.auditDetails.first.longitude;
+                                      if (latStr.isEmpty ||
+                                          longStr.isEmpty ||
+                                          latStr == 'Belum disetting' ||
+                                          longStr == 'Belum disetting') {
                                         ScaffoldMessenger.of(
                                           context,
                                         ).showSnackBar(
@@ -232,13 +299,8 @@ class _AuditViewState extends State<AuditView> {
                                           ),
                                         );
                                       } else {
-                                        final lat = double.parse(
-                                          group.auditDetails.first.latitude,
-                                        );
-                                        final lng = double.parse(
-                                          group.auditDetails.first.longitude,
-                                        );
-
+                                        final lat = double.parse(latStr);
+                                        final lng = double.parse(longStr);
                                         openGoogleMaps(lat, lng);
                                       }
                                     },
@@ -248,11 +310,9 @@ class _AuditViewState extends State<AuditView> {
                                         Text(
                                           "Directions",
                                           style: GoogleFonts.poppins(
-                                            textStyle: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.white,
-                                            ),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
                                           ),
                                         ),
                                         SizedBox(width: 8),
@@ -260,7 +320,6 @@ class _AuditViewState extends State<AuditView> {
                                       ],
                                     ),
                                   ),
-
                                   subtitle: Text(
                                     "Area: ${group.customerAreaName}",
                                     style: GoogleFonts.poppins(
@@ -331,10 +390,6 @@ class _AuditViewState extends State<AuditView> {
                                                           position.longitude,
                                                         );
 
-                                                        print(
-                                                          'latitude: ${position.latitude}, longitude: ${position.longitude}',
-                                                        );
-
                                                         await Navigator.push(
                                                           context,
                                                           MaterialPageRoute(
@@ -351,6 +406,7 @@ class _AuditViewState extends State<AuditView> {
                                                                   idAudit:
                                                                       audit
                                                                           .idAudit,
+                                                                  audit: audit,
                                                                 ),
                                                           ),
                                                         );
@@ -445,7 +501,6 @@ class _AuditViewState extends State<AuditView> {
                 final isAllVisited = audit.groupDetails
                     .expand((group) => group.auditDetails)
                     .every((item) => item.visitStatus == "1");
-
                 return OutlinedButton.icon(
                   icon: const Icon(Icons.done_all_rounded, color: Colors.white),
                   label: Text(
@@ -490,70 +545,129 @@ class _AuditViewState extends State<AuditView> {
                   onPressed:
                       isAllVisited
                           ? () async {
-                            bool confirm = false;
                             await showDialog<void>(
                               context: context,
-                              barrierDismissible: true,
+                              barrierDismissible: false,
                               builder: (BuildContext context) {
-                                return AlertDialog(
-                                  title: const Text('Confirm'),
-                                  content: const SingleChildScrollView(
-                                    child: ListBody(
-                                      children: <Widget>[
-                                        Text(
-                                          'Apakah anda yakin ingin mengakhiri perjalanan ?',
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  actions: <Widget>[
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.red,
-                                      ),
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                      },
-                                      child: const Text(
-                                        "No",
-                                        style: TextStyle(color: Colors.white),
-                                      ),
-                                    ),
+                                bool isLoading = false;
 
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.green,
-                                      ),
-                                      onPressed: () async {
-                                        confirm = true;
-                                        Navigator.of(
-                                          context,
-                                        ).pop(); // Tutup dialog
+                                return StatefulBuilder(
+                                  builder: (context, setState) {
+                                    return AlertDialog(
+                                      title: const Text('Konfirmasi'),
+                                      content:
+                                          isLoading
+                                              ? const SizedBox(
+                                                height: 60,
+                                                child: Center(
+                                                  child:
+                                                      CircularProgressIndicator(),
+                                                ),
+                                              )
+                                              : const Text(
+                                                'Apakah Anda yakin ingin mengakhiri perjalanan?',
+                                              ),
+                                      actions:
+                                          isLoading
+                                              ? []
+                                              : <Widget>[
+                                                ElevatedButton(
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                        backgroundColor:
+                                                            Colors.red,
+                                                      ),
+                                                  onPressed: () {
+                                                    Navigator.pop(context);
+                                                  },
+                                                  child: const Text(
+                                                    "Tidak",
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                                ElevatedButton(
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                        backgroundColor:
+                                                            Colors.green,
+                                                      ),
+                                                  onPressed: () async {
+                                                    setState(() {
+                                                      isLoading = true;
+                                                    });
 
-                                        // Hapus token dan pindah ke login
-                                        await AuthRepository().logout();
-                                        Navigator.of(
-                                          context,
-                                        ).pushAndRemoveUntil(
-                                          MaterialPageRoute(
-                                            builder: (_) => const LoginView(),
-                                          ),
-                                          (route) => false,
-                                        );
-                                      },
-                                      child: const Text(
-                                        "Yes",
-                                        style: TextStyle(color: Colors.white),
-                                      ),
-                                    ),
-                                  ],
+                                                    try {
+                                                      final prefs =
+                                                          await SharedPreferences.getInstance();
+                                                      final auditId = prefs
+                                                          .getString(
+                                                            'id_audit',
+                                                          );
+                                                      final userId = prefs
+                                                          .getString('user_id');
+
+                                                      if (auditId != null &&
+                                                          userId != null) {
+                                                        final repo =
+                                                            AuditRepository();
+                                                        await repo
+                                                            .updateStatusVisit(
+                                                              auditId: auditId,
+                                                              userId: userId,
+                                                            );
+                                                        print(
+                                                          "✅ Status visit berhasil diupdate ke server",
+                                                        );
+                                                      }
+
+                                                      // ✅ Logout & redirect ke LoginView
+                                                      await AuthRepository()
+                                                          .logout();
+
+                                                      if (context.mounted) {
+                                                        Navigator.of(
+                                                          context,
+                                                        ).pushAndRemoveUntil(
+                                                          MaterialPageRoute(
+                                                            builder:
+                                                                (_) =>
+                                                                    const LoginView(),
+                                                          ),
+                                                          (route) => false,
+                                                        );
+                                                      }
+                                                    } catch (e) {
+                                                      if (context.mounted) {
+                                                        Navigator.pop(context);
+                                                        ScaffoldMessenger.of(
+                                                          context,
+                                                        ).showSnackBar(
+                                                          SnackBar(
+                                                            content: Text(
+                                                              "❌ Gagal menyelesaikan perjalanan: $e",
+                                                            ),
+                                                            backgroundColor:
+                                                                Colors.red,
+                                                          ),
+                                                        );
+                                                      }
+                                                    }
+                                                  },
+                                                  child: const Text(
+                                                    "Ya",
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                    );
+                                  },
                                 );
                               },
                             );
-
-                            if (confirm) {
-                              print("Confirmed!");
-                            }
                           }
                           : null,
                 );

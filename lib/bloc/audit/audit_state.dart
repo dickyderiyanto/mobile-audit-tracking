@@ -16,3 +16,15 @@ final class AuditError extends AuditState {
   final String message;
   AuditError(this.message);
 }
+
+class AuditDetailLoaded extends AuditState {
+  final List<AuditDetail> details;
+
+  AuditDetailLoaded(this.details);
+}
+
+class AuditDetailError extends AuditState {
+  final String message;
+
+  AuditDetailError(this.message);
+}

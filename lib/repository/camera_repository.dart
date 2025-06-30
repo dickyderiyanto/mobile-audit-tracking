@@ -74,4 +74,55 @@ class CameraRepository {
       ).showSnackBar(SnackBar(content: Text("Error saat upload: $e")));
     }
   }
+
+  Future<void> uploadPhotoAudit({
+    required String auditId,
+    required String cif,
+    required String imagePath,
+    required String latitude,
+    required String longitude,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    if (token == null || token.isEmpty) {
+      throw Exception("Token tidak ditemukan. Gagal upload foto offline.");
+    }
+
+    final fixedCif = cif.replaceAll('/', '-');
+    final uri = Uri.parse(
+      "${ApiConstants.baseUrl}/checkin-visit/$auditId/$fixedCif",
+    );
+
+    final request =
+        http.MultipartRequest('POST', uri)
+          ..headers.addAll({
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          })
+          ..fields['visit_latitude'] = latitude
+          ..fields['visit_longitude'] = longitude
+          ..fields['visit_status'] = '1'
+          ..files.add(
+            await http.MultipartFile.fromPath(
+              'checkin_image', // sesuai API backend
+              imagePath,
+              filename: path.basename(imagePath),
+            ),
+          );
+
+    final response = await request.send();
+    final responseBody = await response.stream.bytesToString();
+    debugPrint("🛰️ Upload offline photo:");
+    debugPrint("Audit ID: $auditId");
+    debugPrint("CIF: $cif");
+    debugPrint("Latitude: $latitude");
+    debugPrint("Longitude: $longitude");
+
+    if (response.statusCode != 201) {
+      throw Exception(
+        "Gagal upload foto offline. Status: ${response.statusCode}, Response: $responseBody",
+      );
+    }
+  }
 }
