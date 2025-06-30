@@ -1,5 +1,5 @@
 name: mobile_audit_tracking
-description: "A new Flutter project."
+description: "Audit Tracking"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -44,6 +44,14 @@ dev_dependencies:
   image_picker: ^1.1.2
   intl: ^0.20.2
   safe_device: ^1.2.1
+  sqflite: ^2.4.2
+  connectivity_plus: ^6.1.4
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/icon.png"
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
