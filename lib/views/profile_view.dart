@@ -32,7 +32,6 @@ class _ProfileViewState extends State<ProfileView> {
   @override
   void initState() {
     Future.microtask(() {
-      // ignore: use_build_context_synchronously
       context.read<UserInfoBloc>().add(LoadUserInfo(widget.token));
       _auditBloc = AuditBloc(AuditRepository());
     });
@@ -385,7 +384,6 @@ void _showLogoutDialog(BuildContext context) {
 
                 // Hapus token dan pindah ke login
                 await AuthRepository().logout();
-                // ignore: use_build_context_synchronously
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (_) => const LoginView()),
                   (route) => false,

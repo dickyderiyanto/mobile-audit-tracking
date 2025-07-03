@@ -21,6 +21,7 @@ class AuthRepository {
         ).toJson(),
       ),
     );
+    print(response);
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body);
       return LoginModel.fromJson(json['data']);

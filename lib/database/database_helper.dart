@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/audit_model.dart';
@@ -72,15 +74,23 @@ class DatabaseHelper {
     ''');
 
     await db.execute('''
-CREATE TABLE photo_audit_offline (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  audit_id TEXT,
-  cif TEXT,
-  file_path TEXT,
-  latitude TEXT,
-  longitude TEXT,
-  created_at TEXT
-);
+    CREATE TABLE photo_audit_offline (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      audit_id TEXT,
+      cif TEXT,
+      file_path TEXT,
+      latitude TEXT,
+      longitude TEXT,
+      created_at TEXT
+    );
+    ''');
+
+    await db.execute('''
+  CREATE TABLE faktur_options (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category TEXT,
+    option_text TEXT
+  );
 ''');
   }
 
@@ -106,6 +116,55 @@ CREATE TABLE photo_audit_offline (
         );
       }
     }
+  }
+
+  Future<void> insertFakturOptions(Map<String, List<String>> options) async {
+    final db = await database;
+
+    // Bersihkan data lama
+    await db.delete('faktur_options');
+
+    // Masukkan data baru
+    for (final entry in options.entries) {
+      final category = entry.key;
+      final optionList = entry.value;
+
+      // Jika tidak ada opsi, tetap simpan kategori tanpa opsi
+      if (optionList.isEmpty) {
+        await db.insert('faktur_options', {
+          'category': category,
+          'option_text': null,
+        });
+      } else {
+        for (final option in optionList) {
+          await db.insert('faktur_options', {
+            'category': category,
+            'option_text': option,
+          });
+        }
+      }
+    }
+  }
+
+  Future<Map<String, List<String>>> getFakturOptions() async {
+    final db = await database;
+    final result = await db.query('faktur_options');
+
+    Map<String, List<String>> grouped = {};
+    for (final row in result) {
+      final category = row['category'] as String;
+      final option = row['option_text'] as String?;
+
+      if (!grouped.containsKey(category)) {
+        grouped[category] = [];
+      }
+
+      if (option != null) {
+        grouped[category]!.add(option);
+      }
+    }
+
+    return grouped;
   }
 
   // ========== Get Audit by ID ==========

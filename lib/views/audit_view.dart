@@ -18,7 +18,6 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:safe_device/safe_device.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 
 import '../repository/auth_repository.dart' show AuthRepository;
 
@@ -353,85 +352,121 @@ class _AuditViewState extends State<AuditView>
                                                             ),
                                                       ),
                                                     ),
-                                                    onPressed: () async {
-                                                      try {
-                                                        final location =
-                                                            GetLocation();
-                                                        final position =
-                                                            await location
-                                                                .getCurrentLocation();
+                                                    onPressed:
+                                                        isLoading
+                                                            ? null // tombol disable saat loading
+                                                            : () async {
+                                                              setState(() {
+                                                                isLoading =
+                                                                    true;
+                                                              });
 
-                                                        final isMockLocation =
-                                                            await SafeDevice
-                                                                .isMockLocation;
-                                                        if (isMockLocation) {
-                                                          ScaffoldMessenger.of(
-                                                            context,
-                                                          ).showSnackBar(
-                                                            const SnackBar(
-                                                              content: Text(
-                                                                "Terdeteksi menggunakan Fake GPS!",
-                                                              ),
-                                                              backgroundColor:
-                                                                  Colors.red,
-                                                            ),
-                                                          );
-                                                          return;
-                                                        }
+                                                              try {
+                                                                final location =
+                                                                    GetLocation();
+                                                                final position =
+                                                                    await location
+                                                                        .getCurrentLocation();
 
-                                                        final prefs =
-                                                            await SharedPreferences.getInstance();
-                                                        prefs.setDouble(
-                                                          'current_lat',
-                                                          position.latitude,
-                                                        );
-                                                        prefs.setDouble(
-                                                          'current_long',
-                                                          position.longitude,
-                                                        );
+                                                                final isMockLocation =
+                                                                    await SafeDevice
+                                                                        .isMockLocation;
+                                                                if (isMockLocation) {
+                                                                  ScaffoldMessenger.of(
+                                                                    context,
+                                                                  ).showSnackBar(
+                                                                    const SnackBar(
+                                                                      content: Text(
+                                                                        "Terdeteksi menggunakan Fake GPS!",
+                                                                      ),
+                                                                      backgroundColor:
+                                                                          Colors
+                                                                              .red,
+                                                                    ),
+                                                                  );
+                                                                  setState(() {
+                                                                    isLoading =
+                                                                        false;
+                                                                  });
+                                                                  return;
+                                                                }
 
-                                                        await Navigator.push(
-                                                          context,
-                                                          MaterialPageRoute(
-                                                            builder:
-                                                                (
+                                                                final prefs =
+                                                                    await SharedPreferences.getInstance();
+                                                                prefs.setDouble(
+                                                                  'current_lat',
+                                                                  position
+                                                                      .latitude,
+                                                                );
+                                                                prefs.setDouble(
+                                                                  'current_long',
+                                                                  position
+                                                                      .longitude,
+                                                                );
+
+                                                                await Navigator.push(
                                                                   context,
-                                                                ) => AuditDetailView(
-                                                                  token:
-                                                                      widget
-                                                                          .token,
-                                                                  cif:
-                                                                      detail
-                                                                          .cif,
-                                                                  idAudit:
-                                                                      audit
-                                                                          .idAudit,
-                                                                  audit: audit,
-                                                                ),
-                                                          ),
-                                                        );
-                                                      } catch (e) {
-                                                        print('Error: $e');
-                                                        ScaffoldMessenger.of(
-                                                          context,
-                                                        ).showSnackBar(
-                                                          SnackBar(
-                                                            content: Text(
-                                                              "Error saat ambil lokasi: $e",
-                                                            ),
-                                                            backgroundColor:
-                                                                Colors.red,
-                                                          ),
-                                                        );
-                                                      }
-                                                    },
+                                                                  MaterialPageRoute(
+                                                                    builder:
+                                                                        (
+                                                                          context,
+                                                                        ) => AuditDetailView(
+                                                                          token:
+                                                                              widget.token,
+                                                                          cif:
+                                                                              detail.cif,
+                                                                          idAudit:
+                                                                              audit.idAudit,
+                                                                          audit:
+                                                                              audit,
+                                                                        ),
+                                                                  ),
+                                                                );
+                                                              } catch (e) {
+                                                                print(
+                                                                  'Error: $e',
+                                                                );
+                                                                ScaffoldMessenger.of(
+                                                                  context,
+                                                                ).showSnackBar(
+                                                                  SnackBar(
+                                                                    content: Text(
+                                                                      "Error saat ambil lokasi: $e",
+                                                                    ),
+                                                                    backgroundColor:
+                                                                        Colors
+                                                                            .red,
+                                                                  ),
+                                                                );
+                                                              } finally {
+                                                                setState(() {
+                                                                  isLoading =
+                                                                      false;
+                                                                });
+                                                              }
+                                                            },
                                                     child: Row(
                                                       mainAxisSize:
                                                           MainAxisSize.min,
-                                                      children: const [
-                                                        Text("Checkin"),
-                                                        SizedBox(width: 8),
-                                                        Icon(
+                                                      children: [
+                                                        isLoading
+                                                            ? const SizedBox(
+                                                              width: 18,
+                                                              height: 18,
+                                                              child: CircularProgressIndicator(
+                                                                color:
+                                                                    Colors
+                                                                        .white,
+                                                                strokeWidth: 2,
+                                                              ),
+                                                            )
+                                                            : const Text(
+                                                              "Checkin",
+                                                            ),
+                                                        const SizedBox(
+                                                          width: 8,
+                                                        ),
+                                                        const Icon(
                                                           Icons
                                                               .arrow_forward_ios_sharp,
                                                         ),

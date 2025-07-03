@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, avoid_print
 
 import 'dart:io';
 
@@ -6,13 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_audit_tracking/core/config/format_currency.dart';
 import 'package:mobile_audit_tracking/models/audit_model.dart';
+import 'package:mobile_audit_tracking/repository/audit_repository.dart';
 import 'package:mobile_audit_tracking/views/camera_screen.dart';
 import 'package:mobile_audit_tracking/database/database_helper.dart';
 import 'package:mobile_audit_tracking/repository/status_invoice_repository.dart';
 import 'package:mobile_audit_tracking/models/invoice_status_model.dart';
 import 'package:camera/camera.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 
 class AuditDetailView extends StatefulWidget {
   final String token;
@@ -37,18 +37,9 @@ class _AuditDetailViewState extends State<AuditDetailView> {
   Map<String, String> selectedReasonPerInvoice = {};
   Map<String, String?> selectedSubReasonPerInvoice = {};
   final TextEditingController keteranganController = TextEditingController();
+  bool isLoading = false;
 
-  final Map<String, List<String>> fakturOptions = {
-    "Barang diterima, faktur belum bayar.": [
-      "Belum jatuh tempo",
-      "Sales tidak kunjungan",
-      "Barang masih ada",
-    ],
-    "Barang diterima, faktur sudah dibayar.": [],
-    "Barang tidak diterima toko": [],
-    "Faktur udah cicil, nilai benar per hari ini.": [],
-    "Toko tidak ditemukan": [],
-  };
+  Map<String, List<String>> fakturOptions = {};
 
   Future<bool> isConnected() async {
     try {
@@ -60,6 +51,27 @@ class _AuditDetailViewState extends State<AuditDetailView> {
       print("🚫 Tidak ada koneksi internet: $e");
       return false;
     }
+  }
+
+  void loadFakturOptions() async {
+    final isOnline = await isConnected();
+    if (isOnline) {
+      try {
+        fakturOptions = await fetchFakturOptions();
+        await DatabaseHelper().insertFakturOptions(fakturOptions);
+        setState(() {});
+      } catch (e) {
+        print("Gagal ambil data faktur: $e");
+      }
+    } else {
+      await DatabaseHelper().getFakturOptions();
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    loadFakturOptions();
   }
 
   @override
@@ -83,7 +95,7 @@ class _AuditDetailViewState extends State<AuditDetailView> {
         itemCount: filteredDetails.length,
         itemBuilder: (context, index) {
           final detail = filteredDetails[index];
-          final isChecked = selectedInvoice.contains(detail.invoiceCode);
+          selectedInvoice.contains(detail.invoiceCode);
 
           return Card(
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -108,13 +120,13 @@ class _AuditDetailViewState extends State<AuditDetailView> {
                         ),
                       ),
                       Checkbox(
-                        value: selectedInvoice!.contains(detail.invoiceCode),
+                        value: selectedInvoice.contains(detail.invoiceCode),
                         onChanged: (val) {
                           setState(() {
                             if (val == true) {
-                              selectedInvoice!.add(detail.invoiceCode);
+                              selectedInvoice.add(detail.invoiceCode);
                             } else {
-                              selectedInvoice!.remove(detail.invoiceCode);
+                              selectedInvoice.remove(detail.invoiceCode);
                               selectedReasonPerInvoice.remove(
                                 detail.invoiceCode,
                               );
@@ -168,7 +180,7 @@ class _AuditDetailViewState extends State<AuditDetailView> {
                           );
                         }).toList(),
                     onChanged:
-                        selectedInvoice!.contains(detail.invoiceCode)
+                        selectedInvoice.contains(detail.invoiceCode)
                             ? (value) {
                               setState(() {
                                 selectedReasonPerInvoice[detail.invoiceCode] =
@@ -215,7 +227,7 @@ class _AuditDetailViewState extends State<AuditDetailView> {
                               })
                               .toList(),
                       onChanged:
-                          selectedInvoice!.contains(detail.invoiceCode)
+                          selectedInvoice.contains(detail.invoiceCode)
                               ? (value) {
                                 setState(() {
                                   selectedSubReasonPerInvoice[detail
@@ -272,8 +284,6 @@ class _AuditDetailViewState extends State<AuditDetailView> {
             final lat = prefs.getDouble("current_lat") ?? 0.0;
             final long = prefs.getDouble("current_long") ?? 0.0;
 
-            final isOnline = await isConnected();
-
             // Dialog input catatan toko
             await showDialog(
               context: context,
@@ -291,97 +301,128 @@ class _AuditDetailViewState extends State<AuditDetailView> {
                   ),
                   actions: [
                     TextButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed:
+                          isLoading ? null : () => Navigator.pop(context),
                       child: const Text("Batal"),
                     ),
                     ElevatedButton(
-                      onPressed: () async {
-                        if (keteranganController.text.trim().isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Catatan toko wajib diisi"),
-                            ),
-                          );
-                          return;
-                        }
-                        final isOnline = await isConnected();
-                        try {
-                          final db = DatabaseHelper();
-
-                          if (!isOnline) {
-                            for (final code in selectedInvoice) {
-                              final kategori =
-                                  selectedReasonPerInvoice[code] ?? '';
-                              final sub = selectedSubReasonPerInvoice[code];
-                              final fullKet =
-                                  sub != null ? "$kategori - $sub" : kategori;
-
-                              await db.insertInvoiceStatusOffline(
-                                auditId: widget.idAudit,
-                                cif: widget.cif,
-                                invoiceCode: code,
-                                keterangan: fullKet,
-                              );
-                            }
-                          } else {
-                            final repo = StatusInvoiceRepository();
-                            final invoices =
-                                selectedInvoice.map((code) {
-                                  final kategori =
-                                      selectedReasonPerInvoice[code] ?? '';
-                                  final sub = selectedSubReasonPerInvoice[code];
-                                  final fullKet =
-                                      sub != null
-                                          ? "$kategori - $sub"
-                                          : kategori;
-
-                                  return InvoiceDetailStatusModel(
-                                    invoiceCode: code,
-                                    keterangan: fullKet,
+                      onPressed:
+                          isLoading
+                              ? null
+                              : () async {
+                                if (keteranganController.text.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("Catatan toko wajib diisi"),
+                                    ),
                                   );
-                                }).toList();
+                                  return;
+                                }
 
-                            final request = InvoiceStatusModel(
-                              auditId: widget.idAudit,
-                              cif: widget.cif,
-                              statusInvoice: "1",
-                              invoices: invoices,
-                            );
+                                setState(() {
+                                  isLoading = true;
+                                });
 
-                            await repo.updateInvoiceStatus(request);
-                            await repo.postKeteranganToko(
-                              widget.idAudit,
-                              widget.cif,
-                              keteranganController.text,
-                            );
-                          }
+                                final isOnline = await isConnected();
+                                try {
+                                  final db = DatabaseHelper();
 
-                          Navigator.pop(context);
+                                  if (!isOnline) {
+                                    for (final code in selectedInvoice) {
+                                      final kategori =
+                                          selectedReasonPerInvoice[code] ?? '';
+                                      final sub =
+                                          selectedSubReasonPerInvoice[code];
+                                      final fullKet =
+                                          sub != null
+                                              ? "$kategori - $sub"
+                                              : kategori;
 
-                          final cameras = await availableCameras();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (_) => CameraScreen(
-                                    cameras: cameras,
-                                    idAudit: widget.idAudit,
-                                    cif: widget.cif,
-                                    latitude: lat,
-                                    longitude: long,
-                                  ),
-                            ),
-                          );
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("Gagal simpan: $e"),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      },
-                      child: const Text("Lanjut"),
+                                      await db.insertInvoiceStatusOffline(
+                                        auditId: widget.idAudit,
+                                        cif: widget.cif,
+                                        invoiceCode: code,
+                                        keterangan: fullKet,
+                                      );
+                                    }
+                                  } else {
+                                    final repo = StatusInvoiceRepository();
+                                    final invoices =
+                                        selectedInvoice.map((code) {
+                                          final kategori =
+                                              selectedReasonPerInvoice[code] ??
+                                              '';
+                                          final sub =
+                                              selectedSubReasonPerInvoice[code];
+                                          final fullKet =
+                                              sub != null
+                                                  ? "$kategori - $sub"
+                                                  : kategori;
+
+                                          return InvoiceDetailStatusModel(
+                                            invoiceCode: code,
+                                            keterangan: fullKet,
+                                          );
+                                        }).toList();
+
+                                    final request = InvoiceStatusModel(
+                                      auditId: widget.idAudit,
+                                      cif: widget.cif,
+                                      statusInvoice: "1",
+                                      invoices: invoices,
+                                    );
+
+                                    await repo.updateInvoiceStatus(request);
+                                    await repo.postKeteranganToko(
+                                      widget.idAudit,
+                                      widget.cif,
+                                      keteranganController.text,
+                                    );
+                                  }
+
+                                  Navigator.pop(context); // Tutup dialog
+
+                                  final cameras = await availableCameras();
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (_) => CameraScreen(
+                                            cameras: cameras,
+                                            idAudit: widget.idAudit,
+                                            cif: widget.cif,
+                                            latitude: lat,
+                                            longitude: long,
+                                          ),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text("Gagal simpan: $e"),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                } finally {
+                                  setState(() {
+                                    isLoading = false;
+                                  });
+                                }
+                              },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                      ),
+                      child:
+                          isLoading
+                              ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                              : const Text("Lanjut"),
                     ),
                   ],
                 );

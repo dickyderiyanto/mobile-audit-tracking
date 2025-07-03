@@ -102,3 +102,30 @@ class AuditRepository {
     }
   }
 }
+
+Future<Map<String, List<String>>> fetchFakturOptions() async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('token');
+  final response = await http.get(
+    Uri.parse("${ApiConstants.baseUrl}${ApiConstants.fakturOptions}"),
+    headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+  );
+  print(response.body);
+  if (response.statusCode == 200) {
+    final Map<String, dynamic> body = json.decode(response.body);
+
+    if (body['success'] == true) {
+      final data = body['data'] as Map<String, dynamic>;
+      return data.map((key, value) {
+        final List<String> options = List<String>.from(value ?? []);
+        return MapEntry(key, options);
+      });
+    } else {
+      throw Exception("Respon sukses = false");
+    }
+  } else {
+    throw Exception(
+      "Gagal fetch faktur options. Status: ${response.statusCode}",
+    );
+  }
+}
