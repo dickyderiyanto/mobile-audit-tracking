@@ -89,6 +89,7 @@ class AuditBloc extends Bloc<AuditEvent, AuditState> {
           auditId: event.auditId,
           invoiceCode: event.invoiceCode,
           visitStatus: event.visitStatus,
+          payment: event.payment,
         );
         print("Visit status updated locally for ${event.invoiceCode}");
       } catch (e) {

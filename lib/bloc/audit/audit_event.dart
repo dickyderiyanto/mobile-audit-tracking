@@ -32,10 +32,12 @@ class UpdateVisitStatusOffline extends AuditEvent {
   final String auditId;
   final String invoiceCode;
   final String visitStatus;
+  final double payment;
 
   UpdateVisitStatusOffline({
     required this.auditId,
     required this.invoiceCode,
     required this.visitStatus,
+    required this.payment,
   });
 }

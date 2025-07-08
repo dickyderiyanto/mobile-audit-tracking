@@ -109,6 +109,7 @@ class AuditDetail {
   final String latitude;
   final String longitude;
   final String visitStatus;
+  final double payment;
 
   AuditDetail({
     required this.visitStatus,
@@ -119,6 +120,7 @@ class AuditDetail {
     required this.cif,
     required this.latitude,
     required this.longitude,
+    required this.payment,
   });
 
   factory AuditDetail.fromJson(Map<String, dynamic> json) {
@@ -132,6 +134,7 @@ class AuditDetail {
       cif: json['cif'] ?? '',
       latitude: json['latitude'] ?? '',
       longitude: json['longitude'] ?? '',
+      payment: double.tryParse(json['payment'] ?? '0') ?? 0.0,
     );
   }
   Map<String, dynamic> toMap(String auditId, String customerName) {
@@ -146,6 +149,7 @@ class AuditDetail {
       'latitude': latitude,
       'longitude': longitude,
       'visit_status': visitStatus,
+      'payment': payment,
     };
   }
 
@@ -159,6 +163,7 @@ class AuditDetail {
       latitude: map['latitude'],
       longitude: map['longitude'],
       visitStatus: map['visit_status'],
+      payment: (map['payment'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

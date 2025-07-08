@@ -21,6 +21,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', data.accessToken);
         await prefs.setString('user_id', data.userId);
+        await prefs.setString('role_code', data.roleCode);
 
         emit(LoginSuccess(data));
       } catch (e) {

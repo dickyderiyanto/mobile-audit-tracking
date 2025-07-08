@@ -21,7 +21,7 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, fileName);
 
-    return await openDatabase(path, version: 1, onCreate: _onCreate);
+    return await openDatabase(path, version: 3, onCreate: _onCreate);
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -57,7 +57,8 @@ class DatabaseHelper {
         cif TEXT,
         latitude TEXT,
         longitude TEXT,
-        visit_status 
+        payment REAL, 
+        visit_status TEXT
       );
     ''');
 
@@ -246,6 +247,7 @@ class DatabaseHelper {
     required String auditId,
     required String invoiceCode,
     required String visitStatus,
+    required double payment,
   }) async {
     final db = await database;
     await db.update(
@@ -262,6 +264,7 @@ class DatabaseHelper {
     required String cif,
     required String invoiceCode,
     required String keterangan,
+    required double payment,
   }) async {
     final db = await database;
 
@@ -279,6 +282,7 @@ class DatabaseHelper {
         'invoice_code': invoiceCode,
         'status_invoice': "1",
         'keterangan': keterangan,
+        'payment': payment,
         'created_at': DateTime.now().toIso8601String(),
       });
     } else {
@@ -286,6 +290,7 @@ class DatabaseHelper {
         'invoice_status_offline',
         {
           'keterangan': keterangan,
+          'payment': payment,
           'created_at': DateTime.now().toIso8601String(),
         },
         where: 'audit_id = ? AND invoice_code = ?',

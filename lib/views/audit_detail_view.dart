@@ -38,7 +38,8 @@ class _AuditDetailViewState extends State<AuditDetailView> {
   Map<String, String?> selectedSubReasonPerInvoice = {};
   final TextEditingController keteranganController = TextEditingController();
   bool isLoading = false;
-
+  Map<String, String> paymentInvoices = {};
+  String roleCode = "";
   Map<String, List<String>> fakturOptions = {};
 
   Future<bool> isConnected() async {
@@ -61,10 +62,17 @@ class _AuditDetailViewState extends State<AuditDetailView> {
         await DatabaseHelper().insertFakturOptions(fakturOptions);
         setState(() {});
       } catch (e) {
-        print("Gagal ambil data faktur: $e");
+        print("Gagal ambil data faktur (online): $e");
+
+        // fallback offline jika online gagal
+        fakturOptions = await DatabaseHelper().getFakturOptions();
+        setState(() {});
       }
     } else {
-      await DatabaseHelper().getFakturOptions();
+      // ✅ tambahkan ini
+      fakturOptions = await DatabaseHelper().getFakturOptions();
+      print("📦 Data faktur dari SQLite: $fakturOptions");
+      setState(() {});
     }
   }
 
@@ -72,6 +80,11 @@ class _AuditDetailViewState extends State<AuditDetailView> {
   void initState() {
     super.initState();
     loadFakturOptions();
+    SharedPreferences.getInstance().then((prefs) {
+      setState(() {
+        roleCode = prefs.getString("role_code") ?? "";
+      });
+    });
   }
 
   @override
@@ -133,6 +146,7 @@ class _AuditDetailViewState extends State<AuditDetailView> {
                               selectedSubReasonPerInvoice.remove(
                                 detail.invoiceCode,
                               );
+                              paymentInvoices.remove(detail.payment);
                             }
                           });
                         },
@@ -237,6 +251,63 @@ class _AuditDetailViewState extends State<AuditDetailView> {
                               }
                               : null,
                     ),
+                  if ((roleCode == "07" || roleCode == "08") &&
+                      selectedInvoice.contains(detail.invoiceCode))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: StatefulBuilder(
+                        builder: (context, setState) {
+                          final controller = TextEditingController(
+                            text:
+                                paymentInvoices[detail.invoiceCode] != null
+                                    ? FormatCurrency.formatCurrency.format(
+                                      int.tryParse(
+                                            paymentInvoices[detail
+                                                .invoiceCode]!,
+                                          ) ??
+                                          0,
+                                    )
+                                    : '',
+                          );
+
+                          return TextField(
+                            controller: controller,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: "Nominal Bayar",
+                              labelStyle: GoogleFonts.poppins(fontSize: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                            ),
+                            onChanged: (value) {
+                              // Bersihkan input dari karakter non-digit
+                              String digitsOnly = value.replaceAll(
+                                RegExp(r'[^\d]'),
+                                '',
+                              );
+
+                              // Update value yang disimpan ke map
+                              paymentInvoices[detail.invoiceCode] = digitsOnly;
+
+                              // Format ulang tampilan
+                              final newText = FormatCurrency.formatCurrency
+                                  .format(double.tryParse(digitsOnly) ?? 0);
+                              controller.value = TextEditingValue(
+                                text: newText,
+                                selection: TextSelection.collapsed(
+                                  offset: newText.length,
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -258,6 +329,17 @@ class _AuditDetailViewState extends State<AuditDetailView> {
             minimumSize: const Size(double.infinity, 48),
           ),
           onPressed: () async {
+            final totalInvoice = filteredDetails.length;
+            final selectedCount = selectedInvoice.length;
+
+            if (selectedCount < totalInvoice) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Checklist semua invoice sebelum lanjut."),
+                ),
+              );
+              return;
+            }
             if (selectedInvoice.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Pilih minimal satu invoice")),
@@ -337,12 +419,24 @@ class _AuditDetailViewState extends State<AuditDetailView> {
                                           sub != null
                                               ? "$kategori - $sub"
                                               : kategori;
+                                      final paid = paymentInvoices[code];
+
+                                      final sanitizedPaid =
+                                          paid?.replaceAll(
+                                            RegExp(r'[^\d]'),
+                                            '',
+                                          ) ??
+                                          '0';
+
+                                      final paided =
+                                          double.tryParse(sanitizedPaid) ?? 0.0;
 
                                       await db.insertInvoiceStatusOffline(
                                         auditId: widget.idAudit,
                                         cif: widget.cif,
                                         invoiceCode: code,
                                         keterangan: fullKet,
+                                        payment: paided,
                                       );
                                     }
                                   } else {
@@ -358,10 +452,23 @@ class _AuditDetailViewState extends State<AuditDetailView> {
                                               sub != null
                                                   ? "$kategori - $sub"
                                                   : kategori;
+                                          final paid = paymentInvoices[code];
+
+                                          final sanitizedPaid =
+                                              paid?.replaceAll(
+                                                RegExp(r'[^\d]'),
+                                                '',
+                                              ) ??
+                                              '0';
+
+                                          final paided =
+                                              double.tryParse(sanitizedPaid) ??
+                                              0.0;
 
                                           return InvoiceDetailStatusModel(
                                             invoiceCode: code,
                                             keterangan: fullKet,
+                                            payment: paided,
                                           );
                                         }).toList();
 
@@ -379,8 +486,6 @@ class _AuditDetailViewState extends State<AuditDetailView> {
                                       keteranganController.text,
                                     );
                                   }
-
-                                  Navigator.pop(context); // Tutup dialog
 
                                   final cameras = await availableCameras();
                                   Navigator.push(

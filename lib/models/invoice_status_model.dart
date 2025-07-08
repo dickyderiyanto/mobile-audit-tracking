@@ -2,21 +2,31 @@
 class InvoiceDetailStatusModel {
   final String invoiceCode;
   final String keterangan;
+  final double? payment;
 
   InvoiceDetailStatusModel({
     required this.invoiceCode,
     required this.keterangan,
+    this.payment,
   });
 
   factory InvoiceDetailStatusModel.fromJson(Map<String, dynamic> json) {
     return InvoiceDetailStatusModel(
       invoiceCode: json['invoice_code'],
       keterangan: json['keterangan'],
+      payment:
+          (json['payment'] != null)
+              ? (json['payment'] as num).toDouble()
+              : null,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'invoice_code': invoiceCode, 'keterangan': keterangan};
+    return {
+      'invoice_code': invoiceCode,
+      'keterangan': keterangan,
+      if (payment != null) 'payment': payment,
+    };
   }
 }
 
